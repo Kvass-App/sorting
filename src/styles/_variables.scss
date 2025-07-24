@@ -1,0 +1,11 @@
+$breakpoints: (
+  'phone': 767px,
+  'tablet': 992px,
+  'desktop': 1200px
+) !default;
+
+$layers: (
+  'modal': 1004,
+  'flatfinder': 1000,
+  'popper': 999
+) !default;

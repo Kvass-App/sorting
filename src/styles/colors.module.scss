@@ -1,0 +1,87 @@
+@import 'mixins';
+
+$hover: 50%;
+
+:host,
+:root {
+  @include generateHSL('flatfinder-color-error', #e7201b);
+  @include generateHSL('flatfinder-color-success', #0abb59);
+  @include generateHSL('flatfinder-color-warning', #e9ab05);
+  @include generateHSL('flatfinder-color-current', #4b4b4b);
+  @include generateHSL('flatfinder-color-upcoming', #0084ff);
+  @include generateHSL('flatfinder-color-flatfinder', #ffff);
+  @include generateHSL('flatfinder-color-project', #ffff);
+}
+
+:export {
+  current-bg: var(--flatfinder-color-current);
+  current-border: var(--flatfinder-color-current);
+  current-border-opacity: 0;
+  current-hover: css-lighten('flatfinder-color-current', $hover);
+  current-border-hover: css-lighten('flatfinder-color-current', $hover);
+  upcoming: var(--flatfinder-color-upcoming);
+  upcoming-border: var(--flatfinder-color-upcoming);
+  upcoming-border-opacity: 0;
+  upcoming-hover: css-lighten('flatfinder-color-upcoming', $hover);
+  upcoming-border-hover: css-lighten('flatfinder-color-upcoming', $hover);
+  sale-bg: var(--flatfinder-color-success);
+  sale-border: var(--flatfinder-color-success);
+  sale-border-opacity: 0;
+  sale-hover: css-lighten('flatfinder-color-success', $hover);
+  sale-border-hover: css-lighten('flatfinder-color-success', $hover);
+  rent-bg: var(--flatfinder-color-success);
+  rent-border: var(--flatfinder-color-success);
+  rent-border-opacity: 0;
+  rent-hover: css-lighten('flatfinder-color-success', $hover);
+  rent-border-hover: css-lighten('flatfinder-color-success', $hover);
+  rented-bg: var(--flatfinder-color-error);
+  rented-border: var(--flatfinder-color-error);
+  rented-border-opacity: 0;
+  rented-hover: css-lighten('flatfinder-color-error', $hover);
+  rented-border-hover: css-lighten('flatfinder-color-error', $hover);
+  sold-bg: var(--flatfinder-color-error);
+  sold-border: var(--flatfinder-color-error);
+  sold-border-opacity: 0;
+  sold-hover: css-lighten('flatfinder-color-error', $hover);
+  sold-border-hover: css-lighten('flatfinder-color-error', $hover);
+  reserved-bg: var(--flatfinder-color-warning);
+  reserved-border: var(--flatfinder-color-warning);
+  reserved-border-opacity: 0;
+  reserved-hover: css-lighten('flatfinder-color-warning', $hover);
+  reserved-border-hover: css-lighten('flatfinder-color-warning', $hover);
+  project-sale-bg: var(--flatfinder-color-project);
+  project-sale-border: var(--flatfinder-color-project);
+  project-sale-border-opacity: 0;
+  project-sale-hover: css-darken('flatfinder-color-project', 15%);
+  project-sale-border-hover: css-darken('flatfinder-color-project', 15%);
+  project-sold-bg: var(--flatfinder-color-error);
+  project-sold-border: var(--flatfinder-color-error);
+  project-sold-border-opacity: 0;
+  project-sold-hover: css-lighten('flatfinder-color-error', $hover);
+  project-sold-border-hover: css-lighten('flatfinder-color-error', $hover);
+  project-undefined-bg: var(--flatfinder-color-error);
+  project-undefined-border: var(--flatfinder-color-error);
+  project-undefined-border-opacity: 0;
+  project-undefined-hover: css-lighten('flatfinder-color-error', $hover);
+  project-undefined-border-hover: css-lighten('flatfinder-color-error', $hover);
+  flatfinder-sale-bg: var(--flatfinder-color-flatfinder);
+  flatfinder-sale-border: var(--flatfinder-color-flatfinder);
+  flatfinder-sale-border-opacity: 0;
+  flatfinder-sale-hover: css-darken('flatfinder-color-flatfinder', 15%);
+  flatfinder-sale-border-hover: css-darken('flatfinder-color-flatfinder', 15%);
+  flatfinder-undefined-bg: var(--flatfinder-color-flatfinder);
+  flatfinder-undefined-border: var(--flatfinder-color-flatfinder);
+  flatfinder-undefined-border-opacity: 0;
+  flatfinder-undefined-hover: css-darken('flatfinder-color-flatfinder', 15%);
+  flatfinder-undefined-border-hover: css-darken('flatfinder-color-flatfinder', 15%);
+  flatfinder-sold-bg: var(--flatfinder-color-error);
+  flatfinder-sold-border: var(--flatfinder-color-error);
+  flatfinder-sold-border-opacity: 0;
+  flatfinder-sold-hover: css-lighten('flatfinder-color-error', $hover);
+  flatfinder-sold-border-hover: css-lighten('flatfinder-color-error', $hover);
+  link-undefined-bg: var(--flatfinder-color-flatfinder);
+  link-undefined-border: var(--flatfinder-color-flatfinder);
+  link-undefined-border-opacity: 0;
+  link-undefined-hover: css-darken('flatfinder-color-flatfinder', 15%);
+  link-undefined-border-hover: css-darken('flatfinder-color-flatfinder', 15%);
+}
