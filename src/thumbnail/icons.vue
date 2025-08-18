@@ -1,6 +1,6 @@
 <template>
   <Flex class="thumbnail-icons" :nowrap="true" align="center" gap="1rem">
-    <Icon v-for="item in items" :icon="item" width="60px"> </Icon>
+    <Icon v-for="item in items" :icon="item" :width="width"> </Icon>
   </Flex>
 </template>
 
@@ -15,6 +15,10 @@ const props = defineProps({
   value: {
     type: String,
     default: 'fa-pro-solid:xmark',
+  },
+  width: {
+    type: String,
+    default: '40px',
   },
 })
 </script>
