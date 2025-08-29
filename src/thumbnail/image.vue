@@ -1,5 +1,5 @@
 <template>
-  <Image :src="imageComp" :height="height"> </Image>
+  <Image class="thumbnail-image" :src="imageComp" :height="height"> </Image>
 </template>
 
 <script setup lang="ts">
@@ -23,9 +23,16 @@ const props = defineProps({
   },
   height: {
     type: String,
-    default: '90px',
+    default: 'inherit',
   },
 })
 </script>
 
-<style lang="scss"></style>
+<style lang="scss">
+.thumbnail-image {
+  border-radius: var(--k-ui-rounding);
+  border: 1px solid var(--k-ui-color-neutral);
+  height: var(--thumbnail-height) !important;
+  width: var(--thumbnail-width) !important;
+}
+</style>

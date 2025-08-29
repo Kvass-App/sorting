@@ -18,7 +18,7 @@ const props = defineProps({
   },
   width: {
     type: String,
-    default: '40px',
+    default: 'inherit',
   },
 })
 </script>
@@ -26,9 +26,14 @@ const props = defineProps({
 <style lang="scss">
 .thumbnail-icons {
   svg {
-    color: var(--k-ui-color-neutral);
+    color: var(--primary);
   }
-  padding: 0.5rem;
+  $space: 10px;
+  height: calc(#{var(--thumbnail-height)} - $space) !important;
+  width: calc(#{var(--thumbnail-width)} - $space) !important;
   background-color: white;
+  border-radius: var(--k-ui-rounding);
+  border: 1px solid var(--k-ui-color-neutral);
+  padding: calc($space/2);
 }
 </style>

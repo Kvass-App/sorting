@@ -1,6 +1,6 @@
 <script setup>
 import { Button, Card, Dialog, Flex } from '@kvass/ui'
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import draggable from 'vuedraggable'
 import thumbnails from '../thumbnail'
 import Settings from './Settings/Component.vue'
@@ -12,10 +12,20 @@ const props = defineProps({
     type: String,
     default: '[]',
   },
+  labels: {
+    type: Object,
+    default: () => ({
+      title: 'Tillpass rekkefølge',
+      subtitle: 'Her kan du tilpasse rekkefølgen på modulene for denne siden',
+      reset: 'Tilbakestill',
+      cancel: 'Avbryt',
+      confirm: 'Bekreft',
+    }),
+  },
 })
 
 const dragOptions = {
-  animation: 150,
+  animation: 250,
   easing: 'cubic-bezier(1, 0, 0, 1)',
   filter: '.fixed', // Don't allow dragging of .fixed items
   preventOnFilter: false, // Allow clicking but prevent dragging
@@ -24,19 +34,23 @@ const dragOptions = {
 const items = ref([])
 const current = ref({})
 
-const dialog = ref(null)
-const edit = ref(false)
-
+const settingsDialog = ref(null)
 const element = useCurrentElement()
 
+const labelsComp = computed(() => {
+  if (typeof props.labels === 'string') {
+    return JSON.parse(props.labels)
+  }
+
+  return props.labels
+})
 function findCurrentIndex(current, items) {
   return items.findIndex((item) => item.key === current.key)
 }
 
 function openSettings(item) {
   current.value = item
-  console.log(current.value)
-  dialog.value.open()
+  settingsDialog.value.open()
 }
 function getThumbnailComponent(thumbnail) {
   const fallback = thumbnails.icons
@@ -88,51 +102,47 @@ function checkMove(event) {
   )
 }
 
-function reset() {
-  items.value = JSON.parse(props.config)
-  element.value.dispatchEvent(
-    new CustomEvent('webcomponent:update', {
-      detail: [],
-      bubbles: true,
-      composed: true,
-    }),
-  )
-}
-const update = () => {
-  element.value.dispatchEvent(
-    new CustomEvent('webcomponent:update', {
-      detail: items.value.map(({ key, data }) => ({
+const getValue = (state) => {
+  switch (state) {
+    case 'save': {
+      return items.value.map(({ key, data }) => ({
         key,
         data,
-      })),
+      }))
+    }
+    case 'reset':
+      return []
+    case 'default':
+      return null
+  }
+}
+const update = (state) => {
+  if (state === 'reset') {
+    items.value = JSON.parse(props.config)
+  }
+  element.value.dispatchEvent(
+    new CustomEvent('webcomponent:update', {
+      detail: {
+        state,
+        value: getValue(state),
+      },
       bubbles: true,
       composed: true,
     }),
   )
 }
-
-onMounted(() => {})
 </script>
 
 <template>
-  <div :class="['kvass-sorting', { 'kvass-sorting--editing': edit }]">
-    <Button
-      class="kvass-sorting__trigger"
-      label="Endre på rekkefølge"
-      icon-right="fa-pro-regular:angle-down"
-      @click="edit = !edit"
-    >
-    </Button>
-
+  <div :class="['kvass-sorting']">
     <Dialog
       :teleport="true"
-      ref="dialog"
+      ref="settingsDialog"
       :title="`Tilpasninger ${current.label}`"
       alignment="top"
     >
       <template #default>
         <Settings
-          @update="update"
           class="kvass-sorting__settings"
           :value="current"
           :items="items"
@@ -140,21 +150,15 @@ onMounted(() => {})
         </Settings>
       </template>
       <template #actions="{ close }">
-        <Flex
-          justify="flex-end"
-          gap="xs"
-          :style="{
-            width: '100%',
-          }"
-        >
+        <Flex justify="flex-end" gap="xs">
           <Button
-            label="Avbryt"
+            :label="props.labelsComp.cancel"
             icon-right="fa-pro-regular:xmark"
             variant="secondary"
             @click="close"
           />
           <Button
-            label="Bekreft"
+            :label="labelsComp.config"
             icon-right="fa-pro-regular:arrow-right"
             variant="primary"
             @click="close"
@@ -162,26 +166,22 @@ onMounted(() => {})
         </Flex>
       </template>
     </Dialog>
-    <div v-if="edit" class="kvass-sorting__wrapper">
-      <Button
-        class="kvass-sorting__reset"
-        icon-right="fa-pro-regular:arrow-rotate-left"
-        @click="reset"
-        label="Tilbakestill"
-      >
-      </Button>
 
+    <Card
+      variant="prompt"
+      class="kvass-sorting__wrapper"
+      :title="labelsComp.title"
+      :subtitle="labelsComp.subtitle"
+    >
       <draggable
         :move="checkMove"
-        @change="update"
         class="kvass-sorting__draggable"
         v-model="items"
         v-bind="dragOptions"
         item-key="sorting"
       >
         <template #item="{ element }">
-          <Card
-            variant="horizontal"
+          <div
             :class="[
               'kvass-sorting__draggable-item',
               {
@@ -189,15 +189,20 @@ onMounted(() => {})
               },
             ]"
           >
-            <template #header>
-              <span> {{ element.label }}</span>
-            </template>
+            <div class="kvass-sorting__draggable-thumbnail">
+              <component
+                :is="getThumbnailComponent(element.thumbnail)"
+                :value="element.thumbnail"
+              ></component>
+            </div>
+            <Flex direction="column" gap="0.25rem">
+              <strong> {{ element.label }}</strong>
+              <span v-if="element.tags"> {{ element.tags.join(', ') }}</span>
+            </Flex>
 
-            <template #actions>
+            <div class="kvass-sorting__draggable-actions">
               <Button
                 v-if="element.alternatives || element.settings"
-                class="kvass-sorting__element-header-right"
-                label="Tilpasninger"
                 size="small"
                 variant="secondary"
                 icon-right="fa-pro-regular:sliders"
@@ -205,23 +210,40 @@ onMounted(() => {})
               ></Button>
 
               <Button
+                v-if="!element.fixed"
                 class="handle"
                 size="small"
                 variant="secondary"
                 icon="fa-pro-regular:arrows-up-down"
                 :disabled="element.fixed"
               ></Button>
-            </template>
-            <template #default>
-              <component
-                :is="getThumbnailComponent(element.thumbnail)"
-                :value="element.thumbnail"
-              ></component>
-            </template>
-          </Card>
+            </div>
+          </div>
         </template>
       </draggable>
-    </div>
+
+      <template #actions>
+        <Button
+          icon-right="fa-pro-regular:xmark"
+          @click="update('close')"
+          :label="labelsComp.cancel"
+        >
+        </Button>
+        <Button
+          icon-right="fa-pro-regular:arrow-rotate-left"
+          @click="update('reset')"
+          :label="labelsComp.reset"
+        >
+        </Button>
+        <Button
+          variant="primary"
+          icon-right="fa-pro-regular:arrow-right"
+          @click="update('save')"
+          :label="labelsComp.confirm"
+        >
+        </Button>
+      </template>
+    </Card>
   </div>
 </template>
 
@@ -229,42 +251,7 @@ onMounted(() => {})
 @import url('@kvass/ui/style.css');
 
 .kvass-sorting {
-  &--editing {
-    .kvass-sorting__trigger {
-      // background-color: white;
-      border-bottom: none;
-      border-bottom-right-radius: 0;
-      border-bottom-left-radius: 0;
-
-      transform: translate(0, 1px);
-    }
-  }
-
-  &__reset {
-    font-size: 0.8rem;
-    border: none;
-    padding: 0;
-    margin: 0.5rem 0;
-    margin-left: auto;
-    text-decoration: underline;
-
-    &:hover {
-      background-color: transparent !important;
-      opacity: 0.7;
-    }
-  }
-  &__wrapper {
-    width: 300px;
-    padding: 0.5rem;
-    border-radius: var(--k-ui-rounding);
-    border-top-left-radius: 0;
-
-    border: 1px solid var(--k-ui-color-neutral);
-    background-color: white;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
+  --k-card-background: var(--lightest-grey);
 
   &__draggable {
     cursor: move;
@@ -273,51 +260,28 @@ onMounted(() => {})
     gap: 0.5rem;
 
     &-item {
+      background-color: white;
+      width: 450px;
+      display: flex;
+      border: 1px solid var(--k-ui-color-neutral);
+      padding: 0.5rem;
+      border-radius: var(--k-ui-rounding);
+      gap: 0.75rem;
+      align-items: center;
+
       &.fixed {
-        background: #ccc;
         cursor: not-allowed;
       }
     }
-
-    .k-card {
-      --k-card-spacing: 0.3rem;
-      background-color: var(--k-ui-color-neutral-lightest);
-      --k-card-border-color: var(--k-ui-color-neutral-lightest);
-      &__actions,
-      &__header {
-        --k-button-small-padding-inline: 6px;
-        --k-button-small-padding-block: 5px;
-        --k-button-small-font-size: 0.7rem;
-
-        gap: 0.5rem;
-
-        justify-content: center !important;
-      }
-      &__header {
-        font-size: 0.7em;
-      }
-
-      &__content {
-        padding: 0;
-      }
-
-      &--variant-horizontal {
-        grid-template-areas:
-          'header actions'
-          'content content';
-
-        & > .k-card__actions {
-          border: none;
-        }
-      }
+    &-thumbnail {
+      --thumbnail-width: 65px;
+      --thumbnail-height: 55px;
     }
-  }
-
-  &__element-header-right {
-    border: none;
-  }
-  .handle {
-    background-color: var(--k-ui-color-neutral);
+    &-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 0.25rem;
+    }
   }
 }
 </style>
