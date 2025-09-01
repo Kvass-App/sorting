@@ -1,5 +1,6 @@
 <template>
-  <Image class="thumbnail-image" :src="imageComp" :height="height"> </Image>
+  <Image class="thumbnail-image" :size="size" :src="imageComp" :height="height">
+  </Image>
 </template>
 
 <script setup lang="ts">
@@ -14,6 +15,20 @@ const imageComp = computed(() => {
     default:
       return props.value
   }
+})
+
+const size = computed(() => {
+  const fallback = 'cover'
+  if (imageComp.value) {
+    try {
+      const params = new URL(imageComp.value, window.location.origin)
+        .searchParams
+      return params.get('size') || fallback
+    } catch (error) {
+      return fallback
+    }
+  }
+  return fallback
 })
 
 const props = defineProps({

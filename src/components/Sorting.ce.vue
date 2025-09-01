@@ -54,9 +54,9 @@ function openSettings(item) {
 }
 function getThumbnailComponent(thumbnail) {
   const fallback = thumbnails.icons
-
   if (!thumbnail) return fallback
-  if (thumbnail.startsWith('https')) return thumbnails.image
+  if (['https', '/'].some((i) => thumbnail.startsWith(i)))
+    return thumbnails.image
   if (thumbnail.includes(',')) return thumbnails.icons
   return fallback
 }
