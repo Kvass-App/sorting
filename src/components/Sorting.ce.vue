@@ -101,10 +101,16 @@ function checkMove(event) {
     !items.value[event.draggedContext.index].fixed
   )
 }
+function arraysEqualByKeyInOrder(arr1, arr2, key) {
+  if (arr1.length !== arr2.length) return false
+  return arr1.every((item, index) => item[key] === arr2[index][key])
+}
 
 const getValue = (state) => {
   switch (state) {
     case 'save': {
+      if (arraysEqualByKeyInOrder(JSON.parse(props.config), items.value, 'key'))
+        return []
       return items.value.map(({ key, data }) => ({
         key,
         data,
