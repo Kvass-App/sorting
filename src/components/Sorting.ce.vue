@@ -1,5 +1,5 @@
 <script setup>
-import { Button, Card, Dialog, Flex } from '@kvass/ui'
+import { Button, Card, Dialog, Flex, Alert, Icon } from '@kvass/ui'
 import { ref, watch, onMounted, computed } from 'vue'
 import draggable from 'vuedraggable'
 import thumbnails from '../thumbnail'
@@ -20,6 +20,8 @@ const props = defineProps({
       reset: 'Tilbakestill',
       cancel: 'Avbryt',
       confirm: 'Bekreft',
+      alert:
+        'Endringene blir synlig på selve nettsiden når du bekrefter og lagrer',
     }),
   },
 })
@@ -228,6 +230,13 @@ const update = (state) => {
         </template>
       </draggable>
 
+      <Alert class="k-mt-xl">
+        <template #icon>
+          <Icon icon="fa-pro-solid:info-circle"></Icon>
+        </template>
+        {{ labelsComp.alert }}
+      </Alert>
+
       <template #actions>
         <Button
           icon-right="fa-pro-regular:xmark"
@@ -267,7 +276,7 @@ const update = (state) => {
 
     &-item {
       background-color: white;
-      width: 450px;
+
       display: flex;
       border: 1px solid var(--k-ui-color-neutral);
       padding: 0.5rem;
