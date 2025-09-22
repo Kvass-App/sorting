@@ -2,12 +2,19 @@
 import { Button, Card, Dialog, Flex, Alert, Icon } from '@kvass/ui'
 import { ref, watch, onMounted, computed } from 'vue'
 import draggable from 'vuedraggable'
-import thumbnails from '../thumbnail'
 import Settings from './Settings/Component.vue'
+import Add from './Add/Component.vue'
+import Item from './Item.vue'
+
 import { useCurrentElement } from '@vueuse/core'
 
 const props = defineProps({
   value: String,
+  mode: {
+    type: String,
+    enums: 'build' | 'sort',
+    default: 'sort',
+  },
   config: {
     type: String,
     default: '[]',
@@ -18,6 +25,7 @@ const props = defineProps({
       title: 'Tillpass rekkefølge',
       subtitle: 'Her kan du tilpasse rekkefølgen på modulene for denne siden',
       reset: 'Tilbakestill',
+      addAll: 'Legg til alle',
       cancel: 'Avbryt',
       confirm: 'Bekreft',
       alert:
@@ -34,6 +42,9 @@ const dragOptions = {
 }
 
 const items = ref([])
+const fields = ref([])
+
+const add = ref(false)
 const current = ref({})
 
 const settingsDialog = ref(null)
@@ -46,6 +57,10 @@ const labelsComp = computed(() => {
 
   return props.labels
 })
+
+const buildMode = computed(() => {
+  return props.mode === 'build'
+})
 function findCurrentIndex(current, items) {
   return items.findIndex((item) => item.key === current.key)
 }
@@ -54,20 +69,13 @@ function openSettings(item) {
   current.value = item
   settingsDialog.value.open()
 }
-function getThumbnailComponent(thumbnail) {
-  const fallback = thumbnails.icons
-  if (!thumbnail) return fallback
-  if (['https', '/'].some((i) => thumbnail.startsWith(i)))
-    return thumbnails.image
-  if (thumbnail.includes(',')) return thumbnails.icons
-  return fallback
-}
 
 watch(
   () => props.config,
   (newValue, oldValue) => {
     if (!newValue) return
 
+    let addedItems = []
     let val = JSON.parse(newValue)
     const value = JSON.parse(props.value)
 
@@ -80,7 +88,7 @@ watch(
       })
     }
 
-    items.value = val.map((i) => {
+    fields.value = val.map((i) => {
       const index = findCurrentIndex(i, value)
       const data = value?.[index]?.data
 
@@ -90,12 +98,70 @@ watch(
         id: i.key,
       }
     })
+
+    if (buildMode.value) {
+      addedItems = value.map((i) => {
+        const referenceItem = val.find(
+          (v) => v.key === (i.data?.reference || i.key),
+        )
+        return {
+          ...referenceItem,
+          ...i,
+        }
+      })
+
+      if (!value?.length) {
+        addedItems = fields.value.filter((i) => {
+          if (i?.limit?.min === 0) return true
+          return false
+        })
+      }
+
+      items.value = addedItems
+    } else {
+      items.value = fields.value
+    }
   },
   {
     immediate: true,
   },
 )
 
+function addUpdate(item) {
+  if (item) {
+    let key = item.key
+
+    const count = items.value.filter(
+      (i) => i.key === key || i?.data?.reference === key,
+    )
+
+    //filter out form fields of max
+    updateFields(item, count.length)
+
+    if (count?.length) {
+      key = `${key}-${count.length}`
+    }
+
+    items.value.push({
+      ...item,
+      key,
+      data: {
+        reference: item.key,
+      },
+    })
+  }
+  add.value = false
+}
+
+function remove(item) {
+  items.value = items.value.filter((i) => i.key !== item.key)
+}
+
+function updateFields(item, count) {
+  if (item?.limit?.max <= count + 1) {
+    fields.value = fields.value.filter((i) => i.key !== item.key)
+  }
+}
 function checkMove(event) {
   // Prevent dragging if the target item or the dragged item is fixed
   return (
@@ -111,7 +177,10 @@ function arraysEqualByKeyInOrder(arr1, arr2, key) {
 const getValue = (state) => {
   switch (state) {
     case 'save': {
-      if (arraysEqualByKeyInOrder(JSON.parse(props.config), items.value, 'key'))
+      if (
+        !buildMode.value &&
+        arraysEqualByKeyInOrder(JSON.parse(props.config), items.value, 'key')
+      )
         return []
       return items.value.map(({ key, data }) => ({
         key,
@@ -127,6 +196,9 @@ const getValue = (state) => {
 const update = (state) => {
   if (state === 'reset') {
     items.value = JSON.parse(props.config)
+    if (buildMode.value) {
+      items.value.forEach((i) => updateFields(i, 0))
+    }
   }
   element.value.dispatchEvent(
     new CustomEvent('webcomponent:update', {
@@ -160,13 +232,13 @@ const update = (state) => {
       <template #actions="{ close }">
         <Flex justify="flex-end" gap="xs">
           <Button
-            :label="props.labelsComp.cancel"
+            :label="labelsComp.cancel"
             icon-right="fa-pro-regular:xmark"
             variant="secondary"
             @click="close"
           />
           <Button
-            :label="labelsComp.config"
+            :label="labelsComp.confirm"
             icon-right="fa-pro-regular:arrow-right"
             variant="primary"
             @click="close"
@@ -178,8 +250,12 @@ const update = (state) => {
     <Card
       variant="prompt"
       class="kvass-sorting__wrapper"
-      :title="labelsComp.title"
-      :subtitle="labelsComp.subtitle"
+      :title="buildMode ? 'Rediger felter' : labelsComp.title"
+      :subtitle="
+        buildMode
+          ? 'Her kan du tilpasse rekkefølge og legge til felter for denne siden'
+          : labelsComp.subtitle
+      "
     >
       <draggable
         :move="checkMove"
@@ -189,46 +265,52 @@ const update = (state) => {
         item-key="sorting"
       >
         <template #item="{ element }">
-          <div
-            :class="[
-              'kvass-sorting__draggable-item',
-              {
-                fixed: Boolean(element.fixed),
-              },
-            ]"
-          >
-            <div class="kvass-sorting__draggable-thumbnail">
-              <component
-                :is="getThumbnailComponent(element.thumbnail)"
-                :value="element.thumbnail"
-              ></component>
-            </div>
-            <Flex direction="column" gap="0.25rem">
-              <strong> {{ element.label }}</strong>
-              <span v-if="element.tags"> {{ element.tags.join(', ') }}</span>
-            </Flex>
+          <Item :item="element">
+            <template #end>
+              <div class="kvass-sorting__draggable-actions">
+                <Button
+                  v-if="element.alternatives || element.settings"
+                  size="small"
+                  variant="secondary"
+                  icon-right="fa-pro-regular:sliders"
+                  @click="openSettings(element)"
+                ></Button>
+                <Button
+                  v-if="buildMode && !element.fixed"
+                  size="small"
+                  variant="secondary"
+                  icon-right="fa-pro-regular:xmark"
+                  @click="remove(element)"
+                ></Button>
 
-            <div class="kvass-sorting__draggable-actions">
-              <Button
-                v-if="element.alternatives || element.settings"
-                size="small"
-                variant="secondary"
-                icon-right="fa-pro-regular:sliders"
-                @click="openSettings(element)"
-              ></Button>
-
-              <Button
-                v-if="!element.fixed"
-                class="handle"
-                size="small"
-                variant="secondary"
-                icon="fa-pro-regular:arrows-up-down"
-                :disabled="element.fixed"
-              ></Button>
-            </div>
-          </div>
+                <Button
+                  v-if="!element.fixed"
+                  class="handle"
+                  size="small"
+                  variant="secondary"
+                  icon="fa-pro-regular:arrows-up-down"
+                  :disabled="element.fixed"
+                ></Button>
+              </div>
+            </template>
+          </Item>
         </template>
       </draggable>
+      <template v-if="buildMode">
+        <Add
+          v-if="add"
+          :items="fields"
+          @update="addUpdate"
+          :labels="labelsComp"
+        ></Add>
+        <Button
+          class="kvass-sorting__draggable-add"
+          label="Legg til"
+          icon="fa-pro-solid:plus-circle"
+          @click="add = true"
+        >
+        </Button>
+      </template>
 
       <Alert class="k-mt-xl">
         <template #icon>
@@ -245,9 +327,11 @@ const update = (state) => {
         >
         </Button>
         <Button
-          icon-right="fa-pro-regular:arrow-rotate-left"
+          :icon-right="`fa-pro-regular:${
+            buildMode ? 'plus' : 'arrow-rotate-left'
+          }`"
           @click="update('reset')"
-          :label="labelsComp.reset"
+          :label="buildMode ? labelsComp.addAll : labelsComp.reset"
         >
         </Button>
         <Button
@@ -274,28 +358,21 @@ const update = (state) => {
     flex-direction: column;
     gap: 0.5rem;
 
-    &-item {
-      background-color: white;
-
-      display: flex;
-      border: 1px solid var(--k-ui-color-neutral);
-      padding: 0.5rem;
-      border-radius: var(--k-ui-rounding);
-      gap: 0.75rem;
-      align-items: center;
-
-      &.fixed {
-        cursor: not-allowed;
-      }
-    }
-    &-thumbnail {
-      --thumbnail-width: 65px;
-      --thumbnail-height: 55px;
-    }
     &-actions {
       margin-left: auto;
       display: flex;
       gap: 0.25rem;
+    }
+
+    &-add {
+      --k-button-secondary-background-hover: var(--k-ui-color-neutral);
+      --k-button-secondary-background: var(--k-ui-color-neutral-lightest);
+
+      margin-top: 1rem;
+      width: 100%;
+      display: flex;
+      padding: 1rem;
+      justify-content: center;
     }
   }
 }

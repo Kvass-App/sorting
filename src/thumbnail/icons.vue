@@ -28,7 +28,7 @@ const props = defineProps({
   svg {
     color: var(--primary);
   }
-  $space: 10px;
+  $space: 15px;
   height: calc(#{var(--thumbnail-height)} - $space) !important;
   width: calc(#{var(--thumbnail-width)} - $space) !important;
   background-color: white;
