@@ -15,6 +15,11 @@ const props = defineProps({
     enums: 'build' | 'sort',
     default: 'sort',
   },
+  disableReset: {
+    type: Boolean,
+    default: false,
+  },
+
   config: {
     type: String,
     default: '[]',
@@ -327,6 +332,7 @@ const update = (state) => {
         >
         </Button>
         <Button
+          v-if="!disableReset"
           :icon-right="`fa-pro-regular:${
             buildMode ? 'plus' : 'arrow-rotate-left'
           }`"
