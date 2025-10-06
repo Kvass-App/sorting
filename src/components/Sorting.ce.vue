@@ -122,6 +122,14 @@ watch(
         })
       }
 
+      //filter out items that is added maximum times from the limt
+      fields.value = fields.value.filter((item) => {
+        const currentAdded = addedItems.filter((i) => i.key === item.key)
+        return item.limit?.max
+          ? item?.limit?.max !== currentAdded?.length
+          : true
+      })
+
       items.value = addedItems
     } else {
       items.value = fields.value
