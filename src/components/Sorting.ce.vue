@@ -104,7 +104,18 @@ watch(
       }
     })
 
-    if (buildMode.value) {
+    addedItems = value.map((i) => {
+      const referenceItem = val.find(
+        (v) => v.key === (i.data?.reference || i.key),
+      )
+      return {
+        ...referenceItem,
+        ...i,
+      }
+    })
+
+    if (buildMode.value || value?.length) {
+      // find added items if there is a value
       addedItems = value.map((i) => {
         const referenceItem = val.find(
           (v) => v.key === (i.data?.reference || i.key),
@@ -115,20 +126,22 @@ watch(
         }
       })
 
-      if (!value?.length) {
-        addedItems = fields.value.filter((i) => {
-          if (i?.limit?.min === 0) return true
-          return false
+      //filter out items that is added maximum times from the limt
+      if (buildMode.value) {
+        if (!value?.length) {
+          addedItems = fields.value.filter((i) => {
+            if (i?.limit?.min === 0) return true
+            return false
+          })
+        }
+
+        fields.value = fields.value.filter((item) => {
+          const currentAdded = addedItems.filter((i) => i.key === item.key)
+          return item.limit?.max
+            ? item?.limit?.max !== currentAdded?.length
+            : true
         })
       }
-
-      //filter out items that is added maximum times from the limt
-      fields.value = fields.value.filter((item) => {
-        const currentAdded = addedItems.filter((i) => i.key === item.key)
-        return item.limit?.max
-          ? item?.limit?.max !== currentAdded?.length
-          : true
-      })
 
       items.value = addedItems
     } else {
