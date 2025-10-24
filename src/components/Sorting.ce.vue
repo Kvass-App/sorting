@@ -203,8 +203,10 @@ function arraysEqualByKeyInOrder(arr1, arr2, key) {
 const getValue = (state) => {
   switch (state) {
     case 'save': {
+      //if no changes -> Just return empty
       if (
         !buildMode.value &&
+        !props.disableReset &&
         arraysEqualByKeyInOrder(JSON.parse(props.config), items.value, 'key')
       )
         return []
