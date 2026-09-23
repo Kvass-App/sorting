@@ -18,7 +18,7 @@ const props = defineProps({
   },
   width: {
     type: String,
-    default: 'inherit',
+    default: '100%',
   },
 })
 </script>
